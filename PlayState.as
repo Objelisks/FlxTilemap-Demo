@@ -1,5 +1,6 @@
 package
 {
+	import flash.display.BlendMode;
 	import org.flixel.*;
 
 	public class PlayState extends FlxState
@@ -31,16 +32,10 @@ package
 		// Player class modifed from "Mode" demo
 		private var player:Player;
 		
-		// Button for toggling "AUTO", "ALT", and "OFF" mode
+		// Some interface buttons and text
 		private var autoAltBtn:FlxButton;
-		
-		// Button to reset the map
 		private var resetBtn:FlxButton;
-		
-		// Button to end demo
 		private var quitBtn:FlxButton;
-		
-		// Helper text
 		private var helperTxt:FlxText;
 		
 		override public function create():void
@@ -63,6 +58,9 @@ package
 			 *
 			 * Each '0' stands for an empty tile, and each '1' stands for
 			 * a solid tile
+			 *
+			 * When using the auto map generation, the '1's are converted into the corresponding frame
+			 * in the tileset.
 			 */
 			
 			// Initializes the map using the generated string, the tile images, and the tile size
@@ -74,25 +72,24 @@ package
 			player = new Player(64, 220);
 			add(player);
 			
+			// When switching between modes here, the map is reloaded with it's own data, so the positions of tiles are kept the same
+			// Notice that different tilesets are used when the auto mode is switched
 			autoAltBtn = new FlxButton(4, FlxG.height - 24, "AUTO", function():void
 			{
 				switch(collisionMap.auto)
 				{
 					case FlxTilemap.AUTO:
-						collisionMap.loadMap(
-							FlxTilemap.arrayToCSV(collisionMap.getData(true), collisionMap.widthInTiles),
+						collisionMap.loadMap(FlxTilemap.arrayToCSV(collisionMap.getData(true), collisionMap.widthInTiles),
 							alt_tiles, TILE_WIDTH, TILE_HEIGHT, FlxTilemap.ALT);
 						autoAltBtn.label.text = "ALT";
 						break;
 					case FlxTilemap.ALT:
-						collisionMap.loadMap(
-							FlxTilemap.arrayToCSV(collisionMap.getData(true), collisionMap.widthInTiles),
+						collisionMap.loadMap(FlxTilemap.arrayToCSV(collisionMap.getData(true), collisionMap.widthInTiles),
 							empty_tiles, TILE_WIDTH, TILE_HEIGHT, FlxTilemap.OFF);
 						autoAltBtn.label.text = "OFF";
 						break;
 					case FlxTilemap.OFF:
-						collisionMap.loadMap(
-							FlxTilemap.arrayToCSV(collisionMap.getData(true), collisionMap.widthInTiles),
+						collisionMap.loadMap(FlxTilemap.arrayToCSV(collisionMap.getData(true), collisionMap.widthInTiles),
 							auto_tiles, TILE_WIDTH, TILE_HEIGHT, FlxTilemap.AUTO);
 						autoAltBtn.label.text = "AUTO";
 						break;
@@ -125,10 +122,10 @@ package
 			add(resetBtn);
 			
 			quitBtn = new FlxButton(FlxG.width - resetBtn.width - 4, FlxG.height - 24, "Quit",
-				function():void { FlxG.fade(0xff000000, 0.22, function():void { FlxG.switchState(new MenuState()); } ); } ); //meta
+				function():void { FlxG.fade(0xff000000, 0.22, function():void { FlxG.switchState(new MenuState()); } ); } );
 			add(quitBtn);
 			
-			helperTxt = new FlxText(FlxG.width - 96, 4, 96, "Click to place tiles\n\nShift-Click to remove tiles\n\nArrow keys to move");
+			helperTxt = new FlxText(12 + autoAltBtn.width*2, FlxG.height - 30, 150, "Click to place tiles\nShift-Click to remove tiles\nArrow keys to move");
 			add(helperTxt);
 		}
 		
@@ -143,9 +140,11 @@ package
 			highlightBox.x = Math.floor(FlxG.mouse.x / TILE_WIDTH) * TILE_WIDTH;
 			highlightBox.y = Math.floor(FlxG.mouse.y / TILE_HEIGHT) * TILE_HEIGHT;
 			
-			if (FlxG.mouse.pressed() && autoAltBtn.status == FlxButton.NORMAL && resetBtn.status == FlxButton.NORMAL)
+			if (FlxG.mouse.pressed())
 			{
 				// FlxTilemaps can be manually edited at runtime as well
+				// Setting a tile to 0 removes it, and setting it to anything else will place a tile
+				// If auto map is on, the map will automatically update all surrounding tiles
 				collisionMap.setTile(FlxG.mouse.x / TILE_WIDTH, FlxG.mouse.y / TILE_HEIGHT, FlxG.keys.SHIFT?0:1);
 			}
 			
@@ -158,7 +157,7 @@ package
 			highlightBox.drawDebug();
 		}
 		
-		public function wrap(obj:FlxObject):void
+		private function wrap(obj:FlxObject):void
 		{
 			obj.x = (obj.x + obj.width / 2 + FlxG.width) % FlxG.width - obj.width / 2;
 			obj.y = (obj.y + obj.height / 2) % FlxG.height - obj.height / 2;

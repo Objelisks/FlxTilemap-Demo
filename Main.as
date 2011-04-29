@@ -14,7 +14,6 @@ package
 		public function Main():void
 		{
 			super(400, 300, MenuState, 1);
-			FlxG.debug = true;
 		}
 	}
 }
